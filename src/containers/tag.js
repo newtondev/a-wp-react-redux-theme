@@ -1,7 +1,8 @@
 import React, {Component} from 'react';
-import {connect} from 'react-redux';
+import {connect, dispatch} from 'react-redux';
+import {bindActionCreators} from 'redux';
 
-import {fetchPostsFromTax, getTaxIdFromSlug} from '../actions/index';
+import {fetchPostsFromTax, getTaxIdFromSlug, ROUTER} from '../actions/index';
 
 import Header from '../components/header';
 import Main from '../components/main';
@@ -9,39 +10,52 @@ import Footer from '../components/footer';
 
 class Category extends Component {
     componentWillMount() {
-        this.props.getTaxIdFromSlug('tags', this.props.params.slug);
+        this.props.getTaxIdFromSlug('tags', this.props.match.params.slug);
+        this.props.dispatch({
+            type: ROUTER,
+            payload: this.props.match
+        });
     }
 
     componentWillReceiveProps(nextProps) {
-        if (this.props.params.slug !== nextProps.params.slug) {
-            this.props.getTaxIdFromSlug('tags', nextProps.params.slug);
+        if (this.props.match.params.slug !== nextProps.match.params.slug) {
+            this.props.getTaxIdFromSlug('tags', nextProps.match.params.slug);
         }
 
-        if (JSON.stringify(this.props.tax) !== JSON.stringify(nextProps.tax)) {
-            this.props.fetchPostsFromTax('tags', nextProps.tax[0].id, nextProps.params.pageNum);
+        if (JSON.stringify(this.props.tags) !== JSON.stringify(nextProps.tags)) {
+            this.props.fetchPostsFromTax('tags', nextProps.tags[0].id, nextProps.match.params.pageNum);
         }
+        this.props.dispatch({
+            type: ROUTER,
+            payload: this.props.match
+        });
     }
 
-    componentDidUpdate(){
-        document.title = `${this.props.tax[0].name} - ${RT_API.siteName}`;
+    componentDidUpdate() {
+        let title = `${RT_API.siteName} - ${RT_API.siteDescription}`;
+        if (this.props.tags.length) {
+            title = `${this.props.tags[0].name} - ${RT_API.siteName}`;
+        }
+        document.title = title;
     }
 
     render() {
         return (
-            <section className="container-fluid">
-                <Header />
-                <Main posts={this.props.posts}
-                      pageNum={this.props.params.pageNum || 1}
-                      route={this.props.route.path}
-                      slug={this.props.params.slug || ''}/>
-                <Footer />
+            <section className="container-fluid template-tag">
+                <Header/>
+                <Main/>
+                <Footer/>
             </section>
         );
     }
 }
 
-function mapStateToProps({posts, tax}) {
-    return {posts, tax};
+function mapStateToProps({tags}) {
+    return {tags};
 }
 
-export default connect(mapStateToProps, {fetchPostsFromTax, getTaxIdFromSlug})(Category)
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(Object.assign({fetchPostsFromTax, getTaxIdFromSlug, dispatch}), dispatch)
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Category)
